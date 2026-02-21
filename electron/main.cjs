@@ -120,3 +120,39 @@ ipcMain.handle('settings:get', () => {
 ipcMain.handle('settings:set', (_, settings) => {
   return database.settingsSet(settings);
 });
+
+ipcMain.handle('flashcards:getAll', (_, filters = {}) => {
+  return database.flashcardsGetAll(filters || {});
+});
+
+ipcMain.handle('flashcards:getLibrary', () => {
+  return database.flashcardsGetLibrary();
+});
+
+ipcMain.handle('flashcards:getById', (_, id) => {
+  return database.flashcardsGetById(id);
+});
+
+ipcMain.handle('flashcards:create', (_, payload = {}) => {
+  return database.flashcardsCreate(payload);
+});
+
+ipcMain.handle('flashcards:update', (_, id, payload = {}) => {
+  return database.flashcardsUpdate(id, payload);
+});
+
+ipcMain.handle('flashcards:delete', (_, id) => {
+  return database.flashcardsDelete(id);
+});
+
+ipcMain.handle('flashcards:getDue', (_, filters = {}) => {
+  return database.flashcardsGetDue(filters || {});
+});
+
+ipcMain.handle('flashcards:review', (_, id, rating, reviewedAt = null, reviewMeta = {}) => {
+  return database.flashcardsReview(id, rating, reviewedAt, reviewMeta || {});
+});
+
+ipcMain.handle('flashcards:getPerformanceAnalytics', (_, filters = {}) => {
+  return database.flashcardsGetPerformanceAnalytics(filters || {});
+});

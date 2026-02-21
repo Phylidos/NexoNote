@@ -7,6 +7,7 @@
 import { nanoid } from 'nanoid';
 
 const STORAGE_KEY = 'nexonote_notes';
+const FLASHCARDS_KEY = 'nexonote_flashcards_v2_cards';
 
 function hasElectron() {
   return typeof window !== 'undefined' && window.electronAPI?.notes;
@@ -117,6 +118,18 @@ export async function deleteNote(id) {
   const filtered = list.filter((n) => n.id !== id);
   if (filtered.length === list.length) return false;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered.map(serializeNote)));
+  try {
+    const rawCards = localStorage.getItem(FLASHCARDS_KEY);
+    if (rawCards) {
+      const cards = JSON.parse(rawCards);
+      const nextCards = Array.isArray(cards)
+        ? cards.filter((c) => c?.noteId !== id && c?.sourceNoteId !== id)
+        : [];
+      localStorage.setItem(FLASHCARDS_KEY, JSON.stringify(nextCards));
+    }
+  } catch {
+    // ignore local cleanup errors
+  }
   return true;
 }
 

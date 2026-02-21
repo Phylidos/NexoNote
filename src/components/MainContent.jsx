@@ -12,6 +12,10 @@ import Settings from './Settings';
 import TabBar from './TabBar';
 import EmptyTabView from './EmptyTabView';
 import PDFViewer from './PDFViewer';
+import FlashcardsView from './FlashcardsView';
+import PerformanceAnalyticsView from './PerformanceAnalyticsView';
+import FlashcardManualModal from './FlashcardManualModal';
+import FlashcardReviewSession from './FlashcardReviewSession';
 
 const NOTE_VIEW_SIDEBAR_MIN = 200;
 const NOTE_VIEW_SIDEBAR_MAX = 420;
@@ -26,8 +30,6 @@ export default function MainContent({
   notes,
   folderNotes,
   pdfs,
-  currentNoteId,
-  currentNote,
   selectedFolder,
   folders,
   tabs,
@@ -70,6 +72,11 @@ export default function MainContent({
   onTagsChange,
   onExploreSemanticMap,
   onBackFromSemanticMap,
+  flashcardLibraryVersion = 0,
+  onFlashcardLibraryRefresh,
+  reviewSessionConfig = null,
+  onCloseReviewSession,
+  onStartReviewSession,
 }) {
   if (view === 'settings') {
     return (
@@ -93,6 +100,8 @@ export default function MainContent({
         onMoveNoteToFolder={onMoveNoteToFolder}
         copiedNoteId={copiedNoteId}
         folders={folders}
+        refreshKey={flashcardLibraryVersion}
+        onStartReviewSession={onStartReviewSession}
       />
     );
   }
@@ -127,6 +136,42 @@ export default function MainContent({
         onPastePdf={onPastePdf}
         onMovePdfToFolder={onMovePdfToFolder}
         copiedPdfId={copiedPdfId}
+      />
+    );
+  }
+
+  if (view === 'flashcards') {
+    return (
+      <main className="main-content">
+        <FlashcardsView
+          notes={notes}
+          refreshKey={flashcardLibraryVersion}
+          onStartReviewSession={onStartReviewSession}
+          onLibraryChanged={onFlashcardLibraryRefresh}
+        />
+      </main>
+    );
+  }
+
+  if (view === 'performance-analytics') {
+    return (
+      <main className="main-content">
+        <PerformanceAnalyticsView
+          refreshKey={flashcardLibraryVersion}
+          onStartReviewSession={onStartReviewSession}
+        />
+      </main>
+    );
+  }
+
+  if (view === 'flashcard-review') {
+    return (
+      <FlashcardReviewSession
+        noteId={reviewSessionConfig?.noteId || null}
+        topicId={reviewSessionConfig?.topicId || null}
+        type={reviewSessionConfig?.type || null}
+        dueOnly={reviewSessionConfig?.dueOnly !== false}
+        onClose={onCloseReviewSession}
       />
     );
   }
@@ -185,6 +230,7 @@ export default function MainContent({
         onTabClick={onTabClick}
         onTabClose={onTabClose}
         onAddEmptyTab={onAddEmptyTab}
+        onFlashcardLibraryRefresh={onFlashcardLibraryRefresh}
       />
     );
   }
@@ -203,6 +249,8 @@ export default function MainContent({
         onMoveNoteToFolder={onMoveNoteToFolder}
         copiedNoteId={copiedNoteId}
         folders={folders}
+        refreshKey={flashcardLibraryVersion}
+        onStartReviewSession={onStartReviewSession}
       />
     </main>
   );
@@ -233,11 +281,13 @@ function WorkspaceLayout({
   onTabClick,
   onTabClose,
   onAddEmptyTab,
+  onFlashcardLibraryRefresh,
 }) {
   const [sidebarWidth, setSidebarWidth] = useState(NOTE_VIEW_SIDEBAR_DEFAULT);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(NOTE_VIEW_RIGHT_SIDEBAR_DEFAULT);
   const [isDragging, setIsDragging] = useState(false);
   const [isRightDragging, setIsRightDragging] = useState(false);
+  const [manualModalNote, setManualModalNote] = useState(null);
   const startXRef = useRef(0);
   const startWidthRef = useRef(sidebarWidth);
   const startRightWidthRef = useRef(rightSidebarWidth);
@@ -412,6 +462,10 @@ function WorkspaceLayout({
           <NoteViewRightSidebar
             note={activeTab?.type === 'note' ? currentNote : null}
             onCollapse={() => onNoteViewRightSidebarOpenChange(false)}
+            onManualCreateFlashcard={(note) => {
+              if (!note?.id) return;
+              setManualModalNote(note);
+            }}
             onExport={activeTab?.type === 'note' ? async () => {
               // Export note to PDF
               if (!currentNote) return;
@@ -497,6 +551,13 @@ function WorkspaceLayout({
           />
         </div>
       </div>
+      {manualModalNote && (
+        <FlashcardManualModal
+          note={manualModalNote}
+          onClose={() => setManualModalNote(null)}
+          onSaved={onFlashcardLibraryRefresh}
+        />
+      )}
     </main>
   );
 }

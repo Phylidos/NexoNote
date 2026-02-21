@@ -9,14 +9,15 @@ import {
   MessageCircle,
   Download,
   PanelRightClose,
-  HelpCircle,
-  ToggleRight,
-  Layers,
-  Zap,
   Plus,
 } from 'lucide-react';
 
-export default function NoteViewRightSidebar({ note, onCollapse, onExport }) {
+export default function NoteViewRightSidebar({
+  note,
+  onCollapse,
+  onExport,
+  onManualCreateFlashcard,
+}) {
   return (
     <aside className="note-view-right-sidebar">
       <div className="note-view-right-sidebar-header">
@@ -92,28 +93,15 @@ export default function NoteViewRightSidebar({ note, onCollapse, onExport }) {
         </section>
         <section className="note-view-right-sidebar-section">
           <h3 className="note-view-right-sidebar-section-title">Flashcards</h3>
-          <div className="note-view-right-sidebar-flashcard-types">
-            <button type="button" className="note-view-right-sidebar-flashcard-type" title="Multiple choice">
-              <HelpCircle size={18} />
-              <span>MCQ</span>
-            </button>
-            <button type="button" className="note-view-right-sidebar-flashcard-type" title="True or False">
-              <ToggleRight size={18} />
-              <span>True / False</span>
-            </button>
-            <button type="button" className="note-view-right-sidebar-flashcard-type" title="Flip card">
-              <Layers size={18} />
-              <span>Flip Card</span>
-            </button>
-          </div>
           <div className="note-view-right-sidebar-flashcard-actions">
-            <button type="button" className="note-view-right-sidebar-btn note-view-right-sidebar-btn-primary">
-              <Zap size={18} />
-              Auto Generate
-            </button>
-            <button type="button" className="note-view-right-sidebar-btn note-view-right-sidebar-btn-secondary">
+            <button
+              type="button"
+              className="note-view-right-sidebar-btn note-view-right-sidebar-btn-primary"
+              onClick={() => onManualCreateFlashcard?.(note)}
+              disabled={!note}
+            >
               <Plus size={18} />
-              Manual Create
+              Create Flashcards
             </button>
           </div>
         </section>

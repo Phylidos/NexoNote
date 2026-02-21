@@ -25,6 +25,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     update: (id, payload) => ipcRenderer.invoke('pdfs:update', id, payload),
     remove: (id) => ipcRenderer.invoke('pdfs:remove', id),
   },
+  flashcards: {
+    getAll: (filters) => ipcRenderer.invoke('flashcards:getAll', filters),
+    getLibrary: () => ipcRenderer.invoke('flashcards:getLibrary'),
+    getById: (id) => ipcRenderer.invoke('flashcards:getById', id),
+    create: (payload) => ipcRenderer.invoke('flashcards:create', payload),
+    update: (id, payload) => ipcRenderer.invoke('flashcards:update', id, payload),
+    delete: (id) => ipcRenderer.invoke('flashcards:delete', id),
+    getDue: (filters) => ipcRenderer.invoke('flashcards:getDue', filters),
+    review: (id, rating, reviewedAt, reviewMeta) => ipcRenderer.invoke('flashcards:review', id, rating, reviewedAt, reviewMeta),
+    getPerformanceAnalytics: (filters) => ipcRenderer.invoke('flashcards:getPerformanceAnalytics', filters),
+  },
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
     set: (settings) => ipcRenderer.invoke('settings:set', settings),
