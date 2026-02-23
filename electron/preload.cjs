@@ -5,6 +5,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  getBackendUrl: () => ipcRenderer.invoke('backend:getBaseUrl'),
   notes: {
     getAll: () => ipcRenderer.invoke('notes:getAll'),
     getById: (id) => ipcRenderer.invoke('notes:getById', id),

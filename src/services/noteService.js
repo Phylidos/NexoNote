@@ -1,10 +1,11 @@
 /**
  * Note service: single abstraction for all note CRUD.
- * Uses Electron IPC when available (file-backed storage), otherwise localStorage (browser/dev).
+ * Uses Python backend HTTP when getBackendUrl() is set, else Electron IPC, else localStorage (browser/dev).
  * All methods return/accept the canonical Note shape: { id, title, content, createdAt, updatedAt }.
  */
 
 import { nanoid } from 'nanoid';
+import { getBackendClient } from '../apiClient';
 
 const STORAGE_KEY = 'nexonote_notes';
 const FLASHCARDS_KEY = 'nexonote_flashcards_v2_cards';
@@ -27,6 +28,11 @@ function toNote(raw) {
 
 /** @returns {Promise<Note[]>} */
 export async function getNotes() {
+  const backend = await getBackendClient();
+  if (backend) {
+    const list = await backend.notes.getAll();
+    return list.map(toNote);
+  }
   if (hasElectron()) {
     const list = await window.electronAPI.notes.getAll();
     return list.map(toNote);
@@ -42,6 +48,11 @@ export async function getNotes() {
 
 /** @returns {Promise<Note | null>} */
 export async function getNoteById(id) {
+  const backend = await getBackendClient();
+  if (backend) {
+    const raw = await backend.notes.getById(id);
+    return raw ? toNote(raw) : null;
+  }
   if (hasElectron()) {
     const raw = await window.electronAPI.notes.getById(id);
     return raw ? toNote(raw) : null;
@@ -54,6 +65,11 @@ export async function getNoteById(id) {
 /** @param {string | null} [folderId] */
 /** @returns {Promise<Note>} */
 export async function createNote(folderId = null) {
+  const backend = await getBackendClient();
+  if (backend) {
+    const raw = await backend.notes.create(folderId);
+    return toNote(raw);
+  }
   if (hasElectron()) {
     const raw = await window.electronAPI.notes.create(folderId);
     return toNote(raw);
@@ -92,6 +108,11 @@ function serializeNote(n) {
  * @returns {Promise<Note | null>}
  */
 export async function updateNote(id, payload) {
+  const backend = await getBackendClient();
+  if (backend) {
+    const raw = await backend.notes.update(id, payload);
+    return raw ? toNote(raw) : null;
+  }
   if (hasElectron()) {
     const raw = await window.electronAPI.notes.update(id, payload);
     return raw ? toNote(raw) : null;
@@ -111,6 +132,10 @@ export async function updateNote(id, payload) {
 
 /** @returns {Promise<boolean>} */
 export async function deleteNote(id) {
+  const backend = await getBackendClient();
+  if (backend) {
+    return backend.notes.delete(id);
+  }
   if (hasElectron()) {
     return window.electronAPI.notes.delete(id);
   }

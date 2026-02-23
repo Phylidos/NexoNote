@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import { getBackendClient } from '../apiClient';
 import { getNotes } from './noteService';
 import { getFolders } from './folderService';
 
@@ -75,6 +76,11 @@ function saveLocalCardsRaw(cards) {
 }
 
 export async function getFlashcards(filters = {}) {
+  const backend = await getBackendClient();
+  if (backend) {
+    const list = await backend.flashcards.getAll(filters);
+    return list.map(toCard);
+  }
   if (hasElectronFlashcards()) {
     const list = await window.electronAPI.flashcards.getAll(filters);
     return list.map(toCard);
@@ -100,6 +106,10 @@ export async function getFlashcards(filters = {}) {
 }
 
 export async function getFlashcardLibrary() {
+  const backend = await getBackendClient();
+  if (backend) {
+    return backend.flashcards.getLibrary();
+  }
   if (hasElectronFlashcards() && window.electronAPI.flashcards.getLibrary) {
     return window.electronAPI.flashcards.getLibrary();
   }
@@ -133,6 +143,11 @@ export async function getFlashcardLibrary() {
 }
 
 export async function getFlashcardById(id) {
+  const backend = await getBackendClient();
+  if (backend) {
+    const raw = await backend.flashcards.getById(id);
+    return raw ? toCard(raw) : null;
+  }
   if (hasElectronFlashcards()) {
     const raw = await window.electronAPI.flashcards.getById(id);
     return raw ? toCard(raw) : null;
@@ -142,6 +157,11 @@ export async function getFlashcardById(id) {
 }
 
 export async function createFlashcard(payload) {
+  const backend = await getBackendClient();
+  if (backend) {
+    const raw = await backend.flashcards.create(payload);
+    return toCard(raw);
+  }
   if (hasElectronFlashcards()) {
     const raw = await window.electronAPI.flashcards.create(payload);
     return toCard(raw);
@@ -181,6 +201,11 @@ export async function createFlashcard(payload) {
 }
 
 export async function updateFlashcard(id, payload) {
+  const backend = await getBackendClient();
+  if (backend) {
+    const raw = await backend.flashcards.update(id, payload);
+    return raw ? toCard(raw) : null;
+  }
   if (hasElectronFlashcards()) {
     const raw = await window.electronAPI.flashcards.update(id, payload);
     return raw ? toCard(raw) : null;
@@ -202,6 +227,10 @@ export async function updateFlashcard(id, payload) {
 }
 
 export async function deleteFlashcard(id) {
+  const backend = await getBackendClient();
+  if (backend) {
+    return backend.flashcards.delete(id);
+  }
   if (hasElectronFlashcards()) {
     return window.electronAPI.flashcards.delete(id);
   }
@@ -213,6 +242,11 @@ export async function deleteFlashcard(id) {
 }
 
 export async function getDueFlashcards(filters = {}) {
+  const backend = await getBackendClient();
+  if (backend) {
+    const list = await backend.flashcards.getDue(filters);
+    return list.map(toCard);
+  }
   if (hasElectronFlashcards()) {
     const list = await window.electronAPI.flashcards.getDue(filters);
     return list.map(toCard);
@@ -232,6 +266,10 @@ export async function getDueFlashcards(filters = {}) {
 }
 
 export async function getPerformanceAnalytics({ days = 30, now = null } = {}) {
+  const backend = await getBackendClient();
+  if (backend) {
+    return backend.flashcards.getPerformanceAnalytics({ days, now });
+  }
   if (hasElectronFlashcards() && window.electronAPI.flashcards.getPerformanceAnalytics) {
     return window.electronAPI.flashcards.getPerformanceAnalytics({ days, now });
   }
@@ -333,6 +371,14 @@ export async function getPerformanceAnalytics({ days = 30, now = null } = {}) {
 }
 
 export async function reviewFlashcard(id, rating, reviewedAt = null, reviewMeta = {}) {
+  const backend = await getBackendClient();
+  if (backend) {
+    const raw = await backend.flashcards.review(id, rating, reviewedAt, reviewMeta);
+    return {
+      flashcard: toCard(raw.flashcard),
+      scheduling: raw.scheduling,
+    };
+  }
   if (hasElectronFlashcards()) {
     const raw = await window.electronAPI.flashcards.review(id, rating, reviewedAt, reviewMeta);
     return {
