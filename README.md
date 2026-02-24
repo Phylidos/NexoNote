@@ -20,6 +20,7 @@ NexoNote is a desktop note-taking and study companion built with Electron and Re
 - 🌗 **Dark & Light Themes** - Configurable via Settings, applies instantly
 - 🔐 **Offline-First** - All data stored locally, no cloud required
 - 🔗 **Semantic Linking** - Related notes (TF-IDF), in-editor keyword highlights, and a force-directed semantic graph. See [semantic_linking/README.md](semantic_linking/README.md) for setup.
+- 🤖 **AI Assistant** - In-note chat with Explain This, Summarize, and Quiz Me (Hugging Face). Copy `.env.example` to `.env` and set `VITE_HF_API_TOKEN` to your [Hugging Face token](https://huggingface.co/settings/tokens).
 
 ---
 
