@@ -162,6 +162,53 @@ app.whenReady().then(async () => {
     ipcMain.handle('backend:getBaseUrl', () => null);
   }
 
+  // Semantic linking: Python CLI (independent of data backend)
+  ipcMain.handle('semantic-links:find', async (_, payload) => {
+    const projectRoot = path.join(__dirname, '..');
+    const pythonEnv = process.env.NEXONOTE_SEMANTIC_PYTHON;
+    const input = JSON.stringify({
+      target_content: payload.target_content ?? '',
+      notes: payload.notes ?? [],
+      threshold: payload.threshold ?? 0.25,
+      max_results: payload.max_results ?? 50,
+      top_keywords: payload.top_keywords ?? 8,
+    });
+    const opts = { cwd: projectRoot, stdio: ['pipe', 'pipe', 'pipe'] };
+    return new Promise((resolve) => {
+      const run = (pythonCmd, args) => {
+        const proc = spawn(pythonCmd, args, opts);
+        let stdout = '';
+        let stderr = '';
+        proc.stdout.on('data', (chunk) => { stdout += chunk; });
+        proc.stderr.on('data', (chunk) => { stderr += chunk; });
+        proc.on('error', (err) => {
+          if (err.code === 'ENOENT' && process.platform === 'win32' && pythonCmd === 'py') {
+            run('python', ['-m', 'semantic_linking.cli']);
+            return;
+          }
+          resolve({ error: err.message || 'Failed to run Python' });
+        });
+        proc.on('close', (code) => {
+          try {
+            const data = JSON.parse(stdout || '{}');
+            if (data.error) resolve({ error: data.error });
+            else resolve({ links: data.links ?? [] });
+          } catch {
+            resolve({ error: stderr || stdout || (code !== 0 ? `Exit ${code}` : 'Invalid response') });
+          }
+        });
+        proc.stdin.write(input, () => proc.stdin.end());
+      };
+      if (pythonEnv) {
+        run(pythonEnv, ['-m', 'semantic_linking.cli']);
+      } else if (process.platform === 'win32') {
+        run('py', ['-3.13', '-m', 'semantic_linking.cli']);
+      } else {
+        run('python3', ['-m', 'semantic_linking.cli']);
+      }
+    });
+  });
+
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

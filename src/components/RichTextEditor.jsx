@@ -16,6 +16,7 @@ import Image from '@tiptap/extension-image';
 import Highlight from '@tiptap/extension-highlight';
 import { TaskList } from '@tiptap/extension-task-list';
 import { TaskItem } from '@tiptap/extension-task-item';
+import { SemanticLink } from '../extensions/SemanticLink';
 import { useEffect, useState, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import {
   Undo2,
@@ -80,6 +81,7 @@ const extensions = [
   Highlight.configure({ multicolor: true }),
   TaskList,
   TaskItem.configure({ nested: true }),
+  SemanticLink,
 ];
 
 function getHeadingPositions(editor) {
@@ -112,6 +114,7 @@ const RichTextEditor = forwardRef(function RichTextEditor({
   fontSize = 'medium',
   className = '',
   showToolbar = true,
+  onSemanticLinkClick,
 }, ref) {
   const editor = useEditor({
     extensions,
@@ -127,6 +130,23 @@ const RichTextEditor = forwardRef(function RichTextEditor({
   const [selectionToolbar, setSelectionToolbar] = useState({ show: false, top: 0, left: 0 });
   const [lastHighlightColor, setLastHighlightColor] = useState(HIGHLIGHT_COLORS[0]?.value ?? '#6FB38A');
   const contentRef = useRef(null);
+  const onSemanticLinkClickRef = useRef(onSemanticLinkClick);
+  useEffect(() => { onSemanticLinkClickRef.current = onSemanticLinkClick; }, [onSemanticLinkClick]);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const handler = (e) => {
+      const span = e.target.closest('span[data-note-id]');
+      if (!span) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const noteId = span.getAttribute('data-note-id');
+      if (noteId) onSemanticLinkClickRef.current?.(noteId);
+    };
+    el.addEventListener('click', handler);
+    return () => el.removeEventListener('click', handler);
+  }, []);
 
   const updateSelectionToolbar = useCallback(() => {
     if (!editor) return;
@@ -171,6 +191,66 @@ const RichTextEditor = forwardRef(function RichTextEditor({
       if (pos == null) return;
       const startInside = pos + 1;
       editor.chain().focus().setTextSelection(startInside).scrollIntoView().run();
+    },
+
+    /**
+     * Apply semantic-link marks for a set of related notes.
+     * @param {Array<{ linked_note_id: string, similarity_score: number, matched_keywords: string[] }>} links
+     */
+    applySemanticLinks(links) {
+      if (!editor) return;
+
+      editor.chain().focus().selectAll().unsetMark('semanticLink').run();
+      editor.commands.setTextSelection({ from: 0, to: 0 });
+
+      if (!links?.length) return;
+
+      const { state } = editor;
+      const { doc } = state;
+
+      const textRanges = [];
+      doc.descendants((node, pos) => {
+        if (node.isText) textRanges.push({ text: node.text, pos });
+      });
+
+      const targets = [];
+      for (const link of links) {
+        const nid = link.linked_note_id ?? link.note_id;
+        for (const kw of (link.matched_keywords ?? [])) {
+          targets.push({ keyword: kw.toLowerCase(), noteId: nid });
+        }
+      }
+
+      const chain = editor.chain();
+      for (const { text, pos } of textRanges) {
+        const lower = text.toLowerCase();
+        for (const { keyword, noteId } of targets) {
+          if (!keyword) continue;
+          let searchFrom = 0;
+          while (searchFrom < lower.length) {
+            const idx = lower.indexOf(keyword, searchFrom);
+            if (idx === -1) break;
+            const before = idx === 0 ? '' : lower[idx - 1];
+            const after = idx + keyword.length >= lower.length ? '' : lower[idx + keyword.length];
+            const isBoundaryBefore = !before || /[^a-z0-9]/.test(before);
+            const isBoundaryAfter = !after || /[^a-z0-9]/.test(after);
+            if (isBoundaryBefore && isBoundaryAfter) {
+              const from = pos + idx;
+              const to = pos + idx + keyword.length;
+              chain.setTextSelection({ from, to }).setMark('semanticLink', { noteId, keyword });
+            }
+            searchFrom = idx + keyword.length;
+          }
+        }
+      }
+      chain.setTextSelection({ from: 0, to: 0 }).run();
+    },
+
+    /** Remove all semantic-link marks from the document. */
+    clearSemanticLinks() {
+      if (!editor) return;
+      editor.chain().focus().selectAll().unsetMark('semanticLink').run();
+      editor.commands.setTextSelection({ from: 0, to: 0 });
     },
   }), [editor]);
 

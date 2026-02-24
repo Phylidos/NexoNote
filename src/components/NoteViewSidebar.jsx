@@ -1,8 +1,9 @@
 /**
- * Note-view sidebar: back, Tags (inline pills + # input, suggestions, manage), Semantic Graph, Contents.
+ * Note-view sidebar: back, Tags, Related notes (semantic linking), Semantic Graph, Contents.
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { ArrowLeft, Tag, GitBranch, List, Plus, Map, PanelLeftClose, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Tag, GitBranch, List, Plus, Map, PanelLeftClose, Pencil, Trash2, Link2, Loader2 } from 'lucide-react';
+import { findSemanticLinks } from '../services/semanticLinkingService';
 
 /** Extract headings and their text; works even when headings contain nested tags (e.g. bold/italic). */
 function extractHeadings(html) {
@@ -22,15 +23,62 @@ const TAG_HELPER = 'This field accepts tags only. Type # to add or select a tag.
 
 export default function NoteViewSidebar({
   note,
+  notes = [],
   allTags = [],
   onBack,
   onCollapse,
   onTagsChange,
   onExploreSemanticMap,
   onHeadingClick,
+  onOpenInTab,
+  onSemanticLinksReady,
+  onSemanticLinksClear,
 }) {
   const headings = useMemo(() => extractHeadings(note?.content ?? ''), [note?.content]);
   const tags = note?.tags ?? [];
+
+  const [relatedLinks, setRelatedLinks] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+  const [relatedError, setRelatedError] = useState(null);
+
+  const otherNotes = useMemo(
+    () => (notes || []).filter((n) => n.id !== note?.id),
+    [notes, note?.id],
+  );
+
+  useEffect(() => {
+    if (!note?.id || !note?.content || otherNotes.length === 0) {
+      setRelatedLinks([]);
+      setRelatedError(null);
+      onSemanticLinksClear?.();
+      return;
+    }
+    let cancelled = false;
+    setRelatedLoading(true);
+    setRelatedError(null);
+    findSemanticLinks(
+      note.content,
+      otherNotes.map((n) => ({ id: n.id, content: n.content ?? '' })),
+      { threshold: 0.25, maxResults: 20 },
+    ).then(({ links, error }) => {
+      if (cancelled) return;
+      setRelatedLoading(false);
+      setRelatedError(error || null);
+      const normalized = (links || []).map((l) => ({
+        ...l,
+        linked_note_id: l.linked_note_id ?? l.note_id,
+        similarity_score: l.similarity_score ?? l.score ?? 0,
+        matched_keywords: l.matched_keywords ?? [],
+      }));
+      setRelatedLinks(normalized);
+      if (normalized.length > 0) {
+        onSemanticLinksReady?.(normalized);
+      } else {
+        onSemanticLinksClear?.();
+      }
+    });
+    return () => { cancelled = true; };
+  }, [note?.id, note?.content, otherNotes]);
 
   const [editingValue, setEditingValue] = useState('');
   const [isInputVisible, setIsInputVisible] = useState(false);
@@ -447,13 +495,63 @@ export default function NoteViewSidebar({
             )}
           </div>
         </section>
+        <section className="note-view-sidebar-section note-view-sidebar-related">
+          <h3 className="note-view-sidebar-section-title">
+            <Link2 size={16} />
+            Related notes
+          </h3>
+          {relatedLoading && (
+            <div className="note-view-sidebar-related-loading">
+              <span className="note-view-sidebar-related-spinner" aria-hidden />
+              <span>Finding related notes…</span>
+            </div>
+          )}
+          {relatedError && !relatedLoading && (
+            <p className="note-view-sidebar-related-error" role="alert">{relatedError}</p>
+          )}
+          {!relatedLoading && !relatedError && (
+            <ul className="note-view-sidebar-related-list">
+              {relatedLinks.length === 0 ? (
+                <li className="note-view-sidebar-placeholder">No related notes found.</li>
+              ) : (
+                relatedLinks.map((link) => {
+                  const linkedId = link.linked_note_id ?? link.note_id;
+                  const linkedNote = (notes || []).find((n) => n.id === linkedId);
+                  const title = linkedNote?.title ?? 'Untitled';
+                  const score = link.similarity_score ?? link.score ?? 0;
+                  const keywords = link.matched_keywords ?? [];
+                  return (
+                    <li key={linkedId} className="note-view-sidebar-related-item">
+                      <button
+                        type="button"
+                        className="note-view-sidebar-related-link"
+                        onClick={() => onOpenInTab?.({ type: 'note', id: linkedId })}
+                      >
+                        <span className="note-view-sidebar-related-link-title">{title}</span>
+                        <span className="note-view-sidebar-related-link-score">
+                          {Math.round(score * 100)}%
+                        </span>
+                      </button>
+                      {keywords.length > 0 && (
+                        <div className="note-view-sidebar-related-keywords">
+                          {keywords.slice(0, 5).map((kw) => (
+                            <span key={kw} className="note-view-sidebar-related-keyword">{kw}</span>
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          )}
+        </section>
         <section className="note-view-sidebar-section">
           <h3 className="note-view-sidebar-section-title">
             <GitBranch size={16} />
             Semantic Graph
           </h3>
           <div className="note-view-sidebar-graph">
-            <p className="note-view-sidebar-placeholder">Graph view (coming later).</p>
             <button
               type="button"
               className="note-view-sidebar-explore-map"

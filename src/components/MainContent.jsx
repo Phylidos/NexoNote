@@ -12,6 +12,7 @@ import Settings from './Settings';
 import TabBar from './TabBar';
 import EmptyTabView from './EmptyTabView';
 import PDFViewer from './PDFViewer';
+import SemanticGraphView from './SemanticGraphView';
 import FlashcardsView from './FlashcardsView';
 import PerformanceAnalyticsView from './PerformanceAnalyticsView';
 import FlashcardManualModal from './FlashcardManualModal';
@@ -72,6 +73,9 @@ export default function MainContent({
   onTagsChange,
   onExploreSemanticMap,
   onBackFromSemanticMap,
+  allNotesForLinking,
+  onSemanticLinksReady,
+  onSemanticLinksClear,
   flashcardLibraryVersion = 0,
   onFlashcardLibraryRefresh,
   reviewSessionConfig = null,
@@ -177,20 +181,18 @@ export default function MainContent({
   }
 
   if (view === 'semantic-map') {
+    const activeTab = tabs.find((t) => t.id === activeTabId);
+    const graphNote = activeTab?.type === 'note' && activeTab?.resourceId
+      ? notes.find((n) => n.id === activeTab.resourceId) ?? null
+      : null;
     return (
       <main className="main-content main-content-semantic-map">
-        <div className="semantic-map-screen">
-          <button
-            type="button"
-            className="semantic-map-back"
-            onClick={onBackFromSemanticMap}
-            aria-label="Back to note"
-          >
-            <ArrowLeft size={20} />
-            Back to note
-          </button>
-          <p className="semantic-map-placeholder">Semantic map (coming later).</p>
-        </div>
+        <SemanticGraphView
+          note={graphNote}
+          notes={allNotesForLinking ?? notes}
+          onClose={onBackFromSemanticMap}
+          onOpenInTab={onOpenInTab}
+        />
       </main>
     );
   }
@@ -220,6 +222,10 @@ export default function MainContent({
         onNavigateToFolder={onNavigateToFolder}
         onTagsChange={onTagsChange}
         onExploreSemanticMap={onExploreSemanticMap}
+        allNotesForLinking={allNotesForLinking ?? notes}
+        onSemanticLinksReady={onSemanticLinksReady}
+        onSemanticLinksClear={onSemanticLinksClear}
+        onOpenInTab={onOpenInTab}
         editorScrollRef={editorScrollRef}
         editorFlushSaveRef={editorFlushSaveRef}
         settings={settings}
@@ -271,6 +277,10 @@ function WorkspaceLayout({
   onNavigateToFolder,
   onTagsChange,
   onExploreSemanticMap,
+  allNotesForLinking,
+  onSemanticLinksReady,
+  onSemanticLinksClear,
+  onOpenInTab,
   editorScrollRef,
   editorFlushSaveRef,
   settings,
@@ -359,12 +369,16 @@ function WorkspaceLayout({
         >
           <NoteViewSidebar
             note={activeTab?.type === 'note' ? currentNote : null}
+            notes={allNotesForLinking ?? notes}
             allTags={allTags}
             onBack={onBackToDashboard}
             onCollapse={() => onNoteViewSidebarOpenChange(false)}
             onTagsChange={onTagsChange}
             onExploreSemanticMap={onExploreSemanticMap}
             onHeadingClick={(index) => editorScrollRef?.current?.scrollToHeadingIndex(index)}
+            onOpenInTab={onOpenInTab}
+            onSemanticLinksReady={onSemanticLinksReady}
+            onSemanticLinksClear={onSemanticLinksClear}
           />
         </div>
         {noteViewSidebarOpen && (
@@ -407,6 +421,7 @@ function WorkspaceLayout({
                   fontSize={settings.fontSize}
                   flushSaveRef={editorFlushSaveRef}
                   editorScrollRef={editorScrollRef}
+                  onSemanticLinkClick={(noteId) => onOpenInTab?.({ type: 'note', id: noteId })}
                 />
               ) : activeTab.type === 'pdf' && currentPdf ? (
                 <PDFViewer

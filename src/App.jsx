@@ -265,6 +265,14 @@ function App() {
     setView('editor');
   }, []);
 
+  const handleSemanticLinksReady = useCallback((links) => {
+    editorScrollRef.current?.applySemanticLinks?.(links);
+  }, []);
+
+  const handleSemanticLinksClear = useCallback(() => {
+    editorScrollRef.current?.clearSemanticLinks?.();
+  }, []);
+
   const handleCreateFolder = useCallback((parentId = null) => {
     setModal({
       type: 'prompt',
@@ -586,6 +594,9 @@ function App() {
         onTagsChange={handleTagsChange}
         onExploreSemanticMap={handleExploreSemanticMap}
         onBackFromSemanticMap={handleBackFromSemanticMap}
+        allNotesForLinking={notes}
+        onSemanticLinksReady={handleSemanticLinksReady}
+        onSemanticLinksClear={handleSemanticLinksClear}
         flashcardLibraryVersion={flashcardLibraryVersion}
         onFlashcardLibraryRefresh={handleFlashcardLibraryRefresh}
         reviewSessionConfig={reviewSessionConfig}

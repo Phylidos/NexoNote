@@ -19,6 +19,7 @@ NexoNote is a desktop note-taking and study companion built with Electron and Re
 - 🗄️ **SQLite Storage** - Local database in Electron mode; localStorage fallback in browser
 - 🌗 **Dark & Light Themes** - Configurable via Settings, applies instantly
 - 🔐 **Offline-First** - All data stored locally, no cloud required
+- 🔗 **Semantic Linking** - Related notes (TF-IDF), in-editor keyword highlights, and a force-directed semantic graph. See [semantic_linking/README.md](semantic_linking/README.md) for setup.
 
 ---
 
