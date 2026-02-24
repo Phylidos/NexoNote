@@ -502,8 +502,8 @@ export default function NoteViewSidebar({
           </h3>
           {relatedLoading && (
             <div className="note-view-sidebar-related-loading">
-              <span className="note-view-sidebar-related-spinner" aria-hidden />
-              <span>Finding related notes…</span>
+              <Loader2 size={16} className="note-view-sidebar-related-spinner" aria-hidden />
+              <span className="note-view-sidebar-related-loading-text">Finding related notes…</span>
             </div>
           )}
           {relatedError && !relatedLoading && (

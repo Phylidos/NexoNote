@@ -65,13 +65,14 @@ export async function getNoteById(id) {
 /** @param {string | null} [folderId] */
 /** @returns {Promise<Note>} */
 export async function createNote(folderId = null) {
+  const safeFolderId = folderId != null && typeof folderId === 'string' ? folderId : null;
   const backend = await getBackendClient();
   if (backend) {
-    const raw = await backend.notes.create(folderId);
+    const raw = await backend.notes.create(safeFolderId);
     return toNote(raw);
   }
   if (hasElectron()) {
-    const raw = await window.electronAPI.notes.create(folderId);
+    const raw = await window.electronAPI.notes.create(safeFolderId);
     return toNote(raw);
   }
   const now = new Date().toISOString();
@@ -79,7 +80,7 @@ export async function createNote(folderId = null) {
     id: nanoid(),
     title: 'Untitled',
     content: '',
-    folderId: folderId ?? null,
+    folderId: safeFolderId ?? null,
     createdAt: now,
     updatedAt: now,
   };

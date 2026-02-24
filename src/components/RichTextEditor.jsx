@@ -44,7 +44,6 @@ import {
   ListTodo,
   ImagePlus,
   Upload,
-  Sparkles,
   ChevronDown,
 } from 'lucide-react';
 
@@ -400,16 +399,6 @@ function SelectionFloatingToolbar({ editor, top, left, lastHighlightColor, onHig
             </>
           )}
         </div>
-        <span className="rich-text-editor-selection-toolbar-sep" aria-hidden />
-        <button
-          type="button"
-          className="rich-text-editor-selection-toolbar-btn rich-text-editor-selection-toolbar-btn-ai"
-          title="Explain This"
-          aria-label="Explain This"
-        >
-          <Sparkles size={17} strokeWidth={2} />
-          <span className="rich-text-editor-selection-toolbar-btn-ai-label">Explain This</span>
-        </button>
       </div>
     </div>
   );
