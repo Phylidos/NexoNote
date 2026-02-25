@@ -304,6 +304,10 @@ export default function SemanticGraphView({
 
   const canvasW = Math.max(200, dims.width - (panelOpen ? PANEL_W : 0));
   const canvasH = dims.height;
+  const isLightTheme =
+    typeof document !== "undefined" &&
+    document.documentElement.getAttribute("data-theme") === "light";
+  const canvasBackgroundColor = isLightTheme ? "#f1f5f9" : "#0f172a";
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -354,7 +358,7 @@ export default function SemanticGraphView({
               width={canvasW}
               height={canvasH}
               graphData={graphData}
-              backgroundColor="#0f172a"
+              backgroundColor={canvasBackgroundColor}
               nodeCanvasObject={drawNode}
               nodePointerAreaPaint={pointerArea}
               linkCanvasObject={drawLink}
