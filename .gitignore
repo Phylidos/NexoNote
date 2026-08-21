@@ -26,4 +26,10 @@ dist-ssr
 
 # Environment variables
 .env
-.env.example
+.env.*
+!.env.example
+
+# Local assistant/editor workspace
+.claude/
+.claude.json
+.cursor/
